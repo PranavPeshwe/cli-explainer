@@ -2,6 +2,28 @@
 
 A lightweight .NET 8 console application that explains terminal/CLI errors in plain English and provides actionable fixes. It sends error output to an LLM via the GitHub Copilot SDK, then enters an interactive prompt loop for follow-up questions.
 
+## Installation
+
+### Windows (via winget)
+
+```
+winget install PranavPeshwe.CliExplainer
+```
+
+This installs `cli-explainer` as a portable executable and adds it to your PATH.
+
+### Manual Download
+
+Download the latest release for your platform from the [Releases page](https://github.com/PranavPeshwe/cli-explainer/releases):
+
+| Platform | Archive |
+|---|---|
+| Windows x64 | `cli-explainer-win-x64.zip` |
+| Linux x64 | `cli-explainer-linux-x64.zip` |
+| macOS ARM64 | `cli-explainer-osx-arm64.zip` |
+
+Extract the archive and place the executable in a directory on your PATH.
+
 ## Prerequisites
 
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later
