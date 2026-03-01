@@ -8,7 +8,7 @@ try
 }
 catch (ArgumentException ex)
 {
-    await Console.Error.WriteLineAsync(ex.Message);
+    WriteColored(ex.Message, ConsoleColor.Red);
     return 1;
 }
 
@@ -18,14 +18,15 @@ if (parsed.ListModels)
     try
     {
         var models = await CopilotService.GetAvailableModelsAsync();
-        Console.WriteLine("Available models:");
+        WriteColored("Available models:", ConsoleColor.Green);
         foreach (var m in models)
-            Console.WriteLine($"  {m}");
+            WriteColored($"  {m}", ConsoleColor.Green);
     }
     catch (Exception ex)
     {
-        await Console.Error.WriteLineAsync(
-            $"Failed to list models. Is GitHub Copilot CLI installed?\n{ex.Message}");
+        WriteColored(
+            $"Failed to list models. Is GitHub Copilot CLI installed?\n{ex.Message}",
+            ConsoleColor.Red);
         return 1;
     }
     return 0;
@@ -34,8 +35,9 @@ if (parsed.ListModels)
 // --- Validate mutually exclusive input sources ---
 if (parsed.SubprocessArgs is not null && parsed.FilePath is not null)
 {
-    await Console.Error.WriteLineAsync(
-        "Cannot use -f/--file together with -- <command>. Choose one input source.");
+    WriteColored(
+        "Cannot use -f/--file together with -- <command>. Choose one input source.",
+        ConsoleColor.Red);
     return 1;
 }
 
@@ -66,8 +68,7 @@ if (parsed.SubprocessArgs is not null)
     }
     catch (Exception ex)
     {
-        await Console.Error.WriteLineAsync(
-            $"Failed to execute subprocess: {ex.Message}");
+        WriteColored($"Failed to execute subprocess: {ex.Message}", ConsoleColor.Red);
         return 1;
     }
 
@@ -76,9 +77,9 @@ if (parsed.SubprocessArgs is not null)
 
     if (!string.IsNullOrWhiteSpace(result.CombinedOutput))
     {
-        Console.Error.WriteLine("--- Subprocess Output ---");
+        WriteColored("--- Subprocess Output ---", ConsoleColor.Yellow);
         Console.Error.Write(result.CombinedOutput);
-        Console.Error.WriteLine("--- End Subprocess Output ---");
+        WriteColored("--- End Subprocess Output ---", ConsoleColor.Yellow);
         Console.Error.WriteLine();
     }
 
@@ -90,7 +91,7 @@ else if (parsed.FilePath is not null)
 {
     if (!File.Exists(parsed.FilePath))
     {
-        await Console.Error.WriteLineAsync($"File not found: {parsed.FilePath}");
+        WriteColored($"File not found: {parsed.FilePath}", ConsoleColor.Red);
         return 1;
     }
     errorText = await File.ReadAllTextAsync(parsed.FilePath);
@@ -109,14 +110,15 @@ else
 
 if (string.IsNullOrWhiteSpace(errorText))
 {
-    await Console.Error.WriteLineAsync(
-        "No error text provided. Pipe input, use -f <file>, or use -- <command>.");
+    WriteColored(
+        "No error text provided. Pipe input, use -f <file>, or use -- <command>.",
+        ConsoleColor.Red);
     return 1;
 }
 
 // --- Initial Analysis ---
-Action<string> onChunk = chunk => Console.Write(chunk);
-Action<string> onDebug = msg => Console.Error.WriteLine($"[DEBUG] {msg}");
+Action<string> onChunk = chunk => WriteChunkColored(chunk, ConsoleColor.Cyan);
+Action<string> onDebug = msg => WriteColored($"[DEBUG] {msg}", ConsoleColor.DarkGray);
 
 await using var service = new CopilotService(parsed.Model, parsed.Debug);
 
@@ -127,8 +129,9 @@ try
 }
 catch (Exception ex) when (ex is not OutOfMemoryException)
 {
-    await Console.Error.WriteLineAsync(
-        $"Error during analysis. Is GitHub Copilot CLI installed?\n{ex.Message}");
+    WriteColored(
+        $"Error during analysis. Is GitHub Copilot CLI installed?\n{ex.Message}",
+        ConsoleColor.Red);
     return 1;
 }
 
@@ -138,7 +141,8 @@ if (!useRepl)
 
 while (!cts.Token.IsCancellationRequested)
 {
-    Console.Write("\nAsk follow-up (or 'exit'): ");
+    Console.WriteLine();
+    WriteChunkColored("Ask follow-up (or 'exit'): ", ConsoleColor.Red);
     string? input = Console.ReadLine();
 
     if (input is null ||
@@ -162,9 +166,27 @@ while (!cts.Token.IsCancellationRequested)
     }
     catch (Exception ex)
     {
-        await Console.Error.WriteLineAsync($"Error: {ex.Message}");
+        WriteColored($"Error: {ex.Message}", ConsoleColor.Red);
     }
 }
 
-Console.WriteLine("\nGoodbye.");
+WriteColored("\nGoodbye.", ConsoleColor.Green);
 return 0;
+
+// --- Color helpers ---
+
+static void WriteColored(string message, ConsoleColor color)
+{
+    var prev = Console.ForegroundColor;
+    Console.ForegroundColor = color;
+    Console.Error.WriteLine(message);
+    Console.ForegroundColor = prev;
+}
+
+static void WriteChunkColored(string text, ConsoleColor color)
+{
+    var prev = Console.ForegroundColor;
+    Console.ForegroundColor = color;
+    Console.Write(text);
+    Console.ForegroundColor = prev;
+}
