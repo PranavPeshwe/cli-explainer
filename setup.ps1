@@ -121,13 +121,13 @@ Write-Host ""
 # --- NuGet restore check ---
 Write-Host "Checking NuGet package restore..." -ForegroundColor White
 if ($dotnetCmd) {
-    $restoreResult = & dotnet restore CliExplainer.slnx 2>&1
+    $restoreResult = & dotnet restore CliExplainer.sln 2>&1
     if ($LASTEXITCODE -eq 0) {
         Write-Check "NuGet restore" $true "All packages restored successfully"
     } else {
         Write-Check "NuGet restore" $false `
             "Package restore failed. Check your network connection and NuGet sources." `
-            "Run: dotnet restore CliExplainer.slnx --verbosity detailed"
+            "Run: dotnet restore CliExplainer.sln --verbosity detailed"
     }
 } else {
     Write-Check "NuGet restore" $false "Skipped (.NET SDK not found)"

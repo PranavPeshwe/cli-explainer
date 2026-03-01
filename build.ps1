@@ -30,7 +30,7 @@ param(
     [string]$Runtime = "win-x64"
 )
 
-$Solution = "CliExplainer.slnx"
+$Solution = "CliExplainer.sln"
 $Project  = "src/CliExplainer/CliExplainer.csproj"
 
 function Show-Usage {

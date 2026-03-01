@@ -11,6 +11,8 @@ public sealed class CopilotService : IAsyncDisposable
         Do not include introductory/outro fluff.
         """;
 
+    internal const string DefaultModel = "claude-3.7-sonnet";
+
     private readonly string? _model;
     private readonly bool _debug;
     private CopilotClient? _client;
@@ -67,6 +69,10 @@ public sealed class CopilotService : IAsyncDisposable
         if (_model is not null)
         {
             config.Model = _model;
+        }
+        else
+        {
+            config.Model = DefaultModel;
         }
 
         _session = await _client.CreateSessionAsync(config);

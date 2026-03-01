@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set SOLUTION=CliExplainer.slnx
+set SOLUTION=CliExplainer.sln
 set PROJECT=src\CliExplainer\CliExplainer.csproj
 
 if "%~1"=="" goto usage

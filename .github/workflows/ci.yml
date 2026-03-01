@@ -21,13 +21,13 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore dependencies
-        run: dotnet restore CliExplainer.slnx
+        run: dotnet restore CliExplainer.sln
 
       - name: Build
-        run: dotnet build CliExplainer.slnx -c Release --no-restore
+        run: dotnet build CliExplainer.sln -c Release --no-restore
 
       - name: Run unit tests
-        run: dotnet test CliExplainer.slnx --filter "Category!=Integration" --no-build -c Release --verbosity normal
+        run: dotnet test CliExplainer.sln --filter "Category!=Integration" --no-build -c Release --verbosity normal
 
   publish:
     needs: build-and-test

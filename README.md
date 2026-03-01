@@ -62,7 +62,7 @@ cli-explainer --list-models
 
 ```bash
 # Restore and build
-dotnet build CliExplainer.slnx
+dotnet build CliExplainer.sln
 
 # Publish as a single-file executable (Windows x64)
 dotnet publish src/CliExplainer -c Release -r win-x64
@@ -80,19 +80,19 @@ The published binary will be in `src/CliExplainer/bin/Release/net8.0/<runtime>/p
 
 ```bash
 # Run all tests (requires Copilot CLI installed and authenticated)
-dotnet test CliExplainer.slnx
+dotnet test CliExplainer.sln
 
 # Run only unit tests (no Copilot CLI needed)
-dotnet test CliExplainer.slnx --filter "Category!=Integration"
+dotnet test CliExplainer.sln --filter "Category!=Integration"
 
 # Run only integration tests
-dotnet test CliExplainer.slnx --filter "Category=Integration"
+dotnet test CliExplainer.sln --filter "Category=Integration"
 ```
 
 ## Project Structure
 
 ```
-CliExplainer.slnx                  Solution file
+CliExplainer.sln                  Solution file
 src/CliExplainer/
   CliExplainer.csproj              Main project
   Program.cs                       Entry point, input reading, REPL loop
