@@ -9,10 +9,11 @@ A lightweight .NET 8 console application that explains terminal/CLI errors in pl
 
 ## Usage
 
-CLI Explainer reads error text from piped stdin or a file, analyzes it with an LLM, and streams a structured diagnosis with a **Root Cause** and **Fix**.
+CLI Explainer reads error text from piped stdin, a file, or by running a command directly. It analyzes the error with an LLM and streams a structured diagnosis with a **Root Cause** and **Fix**.
 
 ```
 cli-explainer [options]
+cli-explainer [options] -- <command> [command-args...]
 ```
 
 ### Options
@@ -24,13 +25,15 @@ cli-explainer [options]
 | `-m`, `--model <name>` | Override the default AI model |
 | `--list-models` | List all available models and exit |
 | `--debug` | Print internal Copilot SDK diagnostic events to stderr |
+| `-- <command>` | Execute `<command>` as a subprocess; on failure, analyze its output |
 
 ### Input Sources
 
 - **Piped input**: `some_command 2>&1 | cli-explainer`
 - **File input**: `cli-explainer -f error.log`
+- **Subprocess execution**: `cli-explainer -- dotnet build`
 
-When input is piped, the tool prints the analysis and exits. When input is read from a file, an interactive REPL starts after the initial analysis, allowing follow-up questions. Type `exit`, `quit`, or press `Ctrl+C` to end the session.
+When input is piped, the tool prints the analysis and exits. When input is read from a file or a subprocess fails, an interactive REPL starts after the initial analysis, allowing follow-up questions. In subprocess mode, if the command succeeds (exit code 0), nothing is printed. Type `exit`, `quit`, or press `Ctrl+C` to end the session.
 
 ## Examples
 
@@ -57,6 +60,16 @@ List available models:
 ```bash
 cli-explainer --list-models
 ```
+
+Run a command and analyze errors automatically:
+
+```bash
+cli-explainer -- dotnet build
+cli-explainer --debug -- npm install
+cli-explainer -m gpt-5 -- dotnet test CliExplainer.sln --filter "Category!=Integration"
+```
+
+Everything after `--` is passed to the subprocess. Flags like `--debug` or `-m` must appear before `--`.
 
 ## Building
 
@@ -98,6 +111,7 @@ src/CliExplainer/
   Program.cs                       Entry point, input reading, REPL loop
   CopilotService.cs                GitHub Copilot SDK wrapper
   ArgumentParser.cs                CLI argument parsing
+  SubprocessRunner.cs              Subprocess execution and output capture
 tests/CliExplainer.Tests/
   CliExplainer.Tests.csproj        Test project (xUnit)
   CopilotServiceTests.cs           Unit and integration tests

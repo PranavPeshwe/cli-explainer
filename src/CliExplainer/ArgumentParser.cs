@@ -5,7 +5,8 @@ internal sealed record ParsedArgs(
     string? Command,
     string? Model,
     bool ListModels,
-    bool Debug);
+    bool Debug,
+    string[]? SubprocessArgs);
 
 internal static class ArgumentParser
 {
@@ -16,11 +17,20 @@ internal static class ArgumentParser
         string? model = null;
         bool listModels = false;
         bool debug = false;
+        string[]? subprocessArgs = null;
 
         for (int i = 0; i < args.Length; i++)
         {
             switch (args[i])
             {
+                case "--":
+                    var remaining = args[(i + 1)..];
+                    if (remaining.Length == 0)
+                        throw new ArgumentException(
+                            "Expected a command after '--', but none was provided.");
+                    subprocessArgs = remaining;
+                    i = args.Length; // exit the for loop
+                    break;
                 case "-f" or "--file":
                     if (i + 1 >= args.Length)
                         throw new ArgumentException("Missing value for -f/--file");
@@ -47,6 +57,6 @@ internal static class ArgumentParser
             }
         }
 
-        return new ParsedArgs(filePath, command, model, listModels, debug);
+        return new ParsedArgs(filePath, command, model, listModels, debug, subprocessArgs);
     }
 }
