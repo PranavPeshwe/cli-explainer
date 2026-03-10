@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace CliExplainer;
@@ -12,25 +13,69 @@ internal sealed record SubprocessResult(
 
 internal static class SubprocessRunner
 {
+    private static readonly char[] ShellChars = ['|', '>', '<', ';'];
+
+    internal static bool RequiresShell(string command)
+        => command.IndexOfAny(ShellChars) >= 0
+           || command.Contains("&&")
+           || command.Contains("||");
+
     internal static async Task<SubprocessResult> RunAsync(
         string[] subprocessArgs,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        TextWriter? stdoutForward = null,
+        TextWriter? stderrForward = null)
     {
         var executable = subprocessArgs[0];
         var arguments = subprocessArgs.Length > 1
             ? string.Join(' ', subprocessArgs[1..].Select(QuoteIfNeeded))
             : string.Empty;
 
+        var fullCommand = string.IsNullOrEmpty(arguments)
+            ? executable
+            : $"{executable} {arguments}";
+
         using var process = new Process();
-        process.StartInfo = new ProcessStartInfo
+
+        if (RequiresShell(fullCommand))
         {
-            FileName = executable,
-            Arguments = arguments,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                process.StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = $"/c \"{fullCommand}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+            }
+            else
+            {
+                process.StartInfo = new ProcessStartInfo
+                {
+                    FileName = "/bin/sh",
+                    Arguments = $"-c \"{fullCommand.Replace("\"", "\\\"")}\"",
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                };
+            }
+        }
+        else
+        {
+            process.StartInfo = new ProcessStartInfo
+            {
+                FileName = executable,
+                Arguments = arguments,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+            };
+        }
 
         var stdoutBuilder = new StringBuilder();
         var stderrBuilder = new StringBuilder();
@@ -44,6 +89,7 @@ internal static class SubprocessRunner
             {
                 stdoutBuilder.AppendLine(e.Data);
                 combinedBuilder.AppendLine(e.Data);
+                stdoutForward?.WriteLine(e.Data);
             }
         };
 
@@ -54,6 +100,7 @@ internal static class SubprocessRunner
             {
                 stderrBuilder.AppendLine(e.Data);
                 combinedBuilder.AppendLine(e.Data);
+                stderrForward?.WriteLine(e.Data);
             }
         };
 

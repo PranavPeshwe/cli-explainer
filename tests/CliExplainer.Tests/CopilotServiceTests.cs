@@ -137,6 +137,45 @@ public class CopilotServiceTests
         Assert.False(string.IsNullOrWhiteSpace(result.CombinedOutput));
     }
 
+    [Fact]
+    public async Task SubprocessRunner_ForwardsOutputToWriters()
+    {
+        var stdoutWriter = new StringWriter();
+        var stderrWriter = new StringWriter();
+
+        var result = await SubprocessRunner.RunAsync(
+            new[] { "dotnet", "--version" },
+            stdoutForward: stdoutWriter,
+            stderrForward: stderrWriter);
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(result.StandardOutput, stdoutWriter.ToString());
+    }
+
+    [Fact]
+    public async Task SubprocessRunner_PipedCommand_ExecutesThroughShell()
+    {
+        // Single quoted arg containing a pipe — requires shell interpretation
+        var result = await SubprocessRunner.RunAsync(
+            new[] { "echo hello | findstr hello" });
+
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains("hello", result.StandardOutput,
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void RequiresShell_DetectsShellOperators()
+    {
+        Assert.True(SubprocessRunner.RequiresShell("netstat | grep TIME"));
+        Assert.True(SubprocessRunner.RequiresShell("echo hello > out.txt"));
+        Assert.True(SubprocessRunner.RequiresShell("cmd1 && cmd2"));
+        Assert.True(SubprocessRunner.RequiresShell("cmd1 || cmd2"));
+        Assert.True(SubprocessRunner.RequiresShell("cmd1 ; cmd2"));
+        Assert.False(SubprocessRunner.RequiresShell("dotnet build"));
+        Assert.False(SubprocessRunner.RequiresShell("dotnet --version"));
+    }
+
     // --- Integration tests ---
 
     [Fact]

@@ -60,7 +60,10 @@ if (parsed.SubprocessArgs is not null)
     SubprocessResult result;
     try
     {
-        result = await SubprocessRunner.RunAsync(parsed.SubprocessArgs, cts.Token);
+        result = await SubprocessRunner.RunAsync(
+            parsed.SubprocessArgs, cts.Token,
+            stdoutForward: Console.Out,
+            stderrForward: Console.Error);
     }
     catch (OperationCanceledException)
     {
@@ -75,15 +78,11 @@ if (parsed.SubprocessArgs is not null)
     if (result.ExitCode == 0)
         return 0;
 
-    if (!string.IsNullOrWhiteSpace(result.CombinedOutput))
-    {
-        WriteColored("--- Subprocess Output ---", ConsoleColor.Yellow);
-        Console.Error.Write(result.CombinedOutput);
-        WriteColored("--- End Subprocess Output ---", ConsoleColor.Yellow);
-        Console.Error.WriteLine();
-    }
+    WriteColored("\n--- Explanation ---", ConsoleColor.Yellow);
 
     errorText = result.CombinedOutput;
+    if (string.IsNullOrWhiteSpace(errorText))
+        errorText = $"Command exited with code {result.ExitCode} and produced no output.";
     commandText ??= string.Join(' ', parsed.SubprocessArgs);
     useRepl = true;
 }
@@ -100,6 +99,11 @@ else if (parsed.FilePath is not null)
 else if (Console.IsInputRedirected)
 {
     errorText = await Console.In.ReadToEndAsync();
+    if (!string.IsNullOrWhiteSpace(errorText))
+    {
+        Console.Error.Write(errorText);
+        WriteColored("--- Explanation ---", ConsoleColor.Yellow);
+    }
     useRepl = false;
 }
 else
